@@ -277,6 +277,8 @@ class Scheduler:
 
         self._write_coro_inst = None
         self._writes_pending = Event()
+        
+        self._cleanup_callback = None
 
     async def _do_writes(self):
         """An internal coroutine that performs pending writes"""
@@ -1055,12 +1057,21 @@ class Scheduler:
         """
         warnings.warn("This function is now private.", DeprecationWarning, stacklevel=2)
         return self._cleanup()
+    
+    def set_cleanup_callback(self, func):
+        self._cleanup_callback = func
 
     def _cleanup(self):
         """Clear up all our state.
 
         Unprime all pending triggers and kill off any coroutines, stop all externals.
         """
+        # deal with user defined cleanup callback
+        try:
+            self._cleanup_callback()
+        except:
+            self.log.info("No user defined cleanup callback")
+        
         # copy since we modify this in kill
         items = list((k, list(v)) for k, v in self._trigger2coros.items())
 

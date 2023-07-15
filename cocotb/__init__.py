@@ -139,6 +139,9 @@ and in parameters to :class:`.TestFactory`\ s.
 ``None`` if :mod:`cocotb` was not loaded from a simulator.
 """
 
+def set_cleanup_callback(func):
+    global scheduler
+    scheduler.set_cleanup_callback(func)
 
 def fork(coro: Union[Task, Coroutine]) -> Task:
     """
