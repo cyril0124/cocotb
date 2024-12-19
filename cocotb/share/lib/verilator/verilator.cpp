@@ -101,38 +101,26 @@ int main(int argc, char** argv) {
             // These can modify signal values
             again |= settle_value_callbacks();
         }
-        top->eval_end_step();
-
-        // Call ReadOnly callbacks
         VerilatedVpi::callCbs(cbReadOnlySynch);
 
-#if VM_TRACE
-        tfp->dump(main_time);
-#endif
-        // cocotb controls the clock inputs using cbAfterDelay so
-        // skip ahead to the next registered callback
-        const vluint64_t NO_TOP_EVENTS_PENDING = static_cast<vluint64_t>(~0ULL);
-        vluint64_t next_time_cocotb = VerilatedVpi::cbNextDeadline();
-        vluint64_t next_time_timing =
-            top->eventsPending() ? top->nextTimeSlot() : NO_TOP_EVENTS_PENDING;
-        vluint64_t next_time = std::min(next_time_cocotb, next_time_timing);
-
-        // If there are no more cbAfterDelay callbacks,
-        // the next deadline is max value, so end the simulation now
-        if (next_time == NO_TOP_EVENTS_PENDING) {
-            break;
-        } else {
-            main_time = next_time;
+        if ((main_time % 10) == 0) {
+            top->clock = top->clock ? 0 : 1; // Toggle clock
+            top->eval_step();
         }
 
-        // Call registered NextSimTime
-        // It should be called in simulation cycle before everything else
-        // but not on first cycle
+        top->eval_end_step();
+
         VerilatedVpi::callCbs(cbNextSimTime);
 
         // Call Value Change callbacks triggered by NextTimeStep callbacks
         // These can modify signal values
         settle_value_callbacks();
+        // lua_main_step();
+
+#if VM_TRACE
+        tfp->dump(main_time);
+#endif
+        main_time += 5;
     }
 
     VerilatedVpi::callCbs(cbEndOfSimulation);
